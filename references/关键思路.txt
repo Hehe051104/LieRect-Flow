@@ -1,0 +1,19 @@
+1
+要求 刚体不变形 推到 R为正交阵
+
+2
+由物体旋转过程中保持刚体不变形推到 R导✖️R转置 = w hat 进而 R导 = w hat ✖️ R
+所以积分得 R(t) = e的(w hat ✖️ t)  w hat为3✖️3矩阵，w为列矩阵(角速度)
+
+3 （n hat为类w hat的反对称矩阵）
+w hat ✖️ t = θ("总角度") ✖️ n hat  (n hat 为定轴旋转的空间转轴方向)
+将R(t)转换成求 e的(θ ✖️ n hat)
+在算n hat 的幂时发现：n hat 的n次幂有周期特性 (反对称矩阵惊人的代数周期性质)
+把 e的(θ ✖️ n hat) 泰勒展开，n hat一组，n hat²一组，正好又对应sin与cos展开
+罗德里格斯公式(Rodrigues' Formula):所以 R = exp(θ ✖️ n hat) = I + sin(θ)n hat + (1 - cos(θ))n hat²
+
+4
+R = I + sin(θ)n hat + (1 - cos(θ))n hat²
+若已知R，反过来求θ    两边同时求tr
+若要求 n 令R - R转置  ( 核心:n转置 = -n ) 求到的是n hat，再把hat脱掉得到n
+
