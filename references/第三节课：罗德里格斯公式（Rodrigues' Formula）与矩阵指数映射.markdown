@@ -23,7 +23,7 @@ $$\boldsymbol{\omega} t = \theta \mathbf{n}$$
 * 带角度的旋转✖️时间=总角度✖️方向
 
 * $\theta = \Vert{}\boldsymbol{\omega} t\Vert{} \in \mathbb{R}$：标量，表示**绕转轴转过的总角度**（弧度制）。
-* $\mathbf{n} = \frac{\boldsymbol{\omega} t}{\theta} \in \mathbb{R}^3$：三维单位向量（$\Vert{}\mathbf{n}\Vert{} = 1$），表示**定轴旋转的空间转轴方向**。
+* $\mathbf{n} = \frac{\boldsymbol{\omega} t}{\theta} \in \mathbb{R}^3$：三维单位向量（$\Vert{}\mathbf{n}\Vert{} = 1$），表示**定轴旋转的空间转轴方向**。  是一根轴
 
 因此，我们要计算的矩阵指数实际上就是：
 
@@ -120,3 +120,5 @@ $$\mathbf{R} = \exp(\theta \hat{\mathbf{n}}) = \mathbf{I} + (\sin\theta) \hat{\m
 ---
 
 查看一下从“$\hat{\mathbf{n}}^3 = -\hat{\mathbf{n}}$”推导至罗德里格斯公式的闭式解过程是否清晰。
+
+![alt text](image.png)
