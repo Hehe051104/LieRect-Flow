@@ -1,0 +1,47 @@
+现在底层算子库 `core/lie_algebra.py` 已经通过 GPU 测试，我们可以按下面这条清晰的工程路线图把整个 `LieRect-Flow` 搭起来：
+
+1. **第一模块：`core/lie_algebra.py**`（$SO(3)$ 指数与对数映射算子）—— **已完成**
+2. **第二模块：`core/manifold.py**`（**当前这一步**：$SE(3)$ 完整位姿的测地线插值与目标速度计算）
+3. **第三模块：`models/vector_field.py**`（输入当前位姿与时间 $t$，预测切空间速度的神经网络）
+4. **第四模块：`train.py` & `inference.py**`（流匹配训练循环与少步数 ODE 积分推理）
+
+---
+
+### 第二模块核心原理：`core/manifold.py` 要解决什么问题？
+
+之前我们只处理了旋转矩阵 $\mathbf{R} \in SO(3)$，但机械臂抓东西不仅要对准**角度**，还要移动到指定的**三维坐标**。因此完整位姿 $T \in SE(3)$ 由一对参数组成：
+
+
+$$T = (\mathbf{R}, \mathbf{p}), \quad \text{其中 } \mathbf{R} \in SO(3),\ \mathbf{p} = [x, y, z]^\top \in \mathbb{R}^3$$
+
+在写代码前，先理清这一模块里的两个关键设计：
+
+#### 1. 为什么在 $SO(3) \times \mathbb{R}^3$ 上“平动与转动解耦”插值？
+
+在机器人流匹配（Riemannian Flow Matching）中，从噪声位姿 $T_0 = (\mathbf{R}_0, \mathbf{p}_0)$ 过渡到专家目标位姿 $T_1 = (\mathbf{R}_1, \mathbf{p}_1)$ 时，工程上通常将平移和旋转分开插值：
+
+* **物理直觉**：夹爪在空间中**沿着直线飞向目标点 $\mathbf{p}_1$**，同时在飞行过程中**绕自身中心按最短测地线转到目标朝向 $\mathbf{R}_1$**。
+* **如果不解耦会怎样**：若强行用耦合的 $4 \times 4$ 矩阵指数做螺旋运动（Screw Motion），旋转会与世界坐标系原点绑定，导致夹爪在空中甩出一道巨大的弧线，很容易撞到桌面或周围障碍物。
+
+#### 2. `core/manifold.py` 必须实现的两个公式
+
+在流匹配训练中，每次采样一对“随机初始噪声位姿 $(\mathbf{R}_0, \mathbf{p}_0)$”和“专家示范位姿 $(\mathbf{R}_1, \mathbf{p}_1)$”，以及一个随机时间 $t \in [0, 1]$，我们需要计算两件事：
+
+* **任务 A：求中间时刻 $t$ 的状态 $(\mathbf{R}_t, \mathbf{p}_t)$（喂给神经网络作为输入）**
+
+$$\begin{aligned} \mathbf{p}_t &= (1 - t)\mathbf{p}_0 + t\mathbf{p}_1 \\ \mathbf{R}_t &= \mathbf{R}_0 \cdot \text{so3\_exp}\Big( t \cdot \text{so3\_log}(\mathbf{R}_0^\top \mathbf{R}_1) \Big) \end{aligned}$$
+
+
+* **任务 B：求该轨迹上的真值水流速度 $(\boldsymbol{\omega}_{\text{target}}, \mathbf{v}_{\text{target}})$（作为计算 Loss 的标准答案）**
+因为沿着测地线做的是“匀速直线 + 匀速定轴转动”，整条路径从 $t=0$ 到 $t=1$ 的瞬时速度在时间上保持恒定：
+
+$$\begin{aligned} \mathbf{v}_{\text{target}} &= \mathbf{p}_1 - \mathbf{p}_0 \quad (\text{平移速度向量} \in \mathbb{R}^3) \\ \boldsymbol{\omega}_{\text{target}} &= \text{so3\_log}(\mathbf{R}_0^\top \mathbf{R}_1) \quad (\text{夹爪自身坐标系下的角速度向量} \in \mathbb{R}^3) \end{aligned}$$
+
+
+
+有了这两个公式，前面写的 `so3_exp` 和 `so3_log` 就正式接入了训练数据流水线。
+
+---
+
+**检查点：**
+平动走直线、转动走 $SO(3)$ 测地线的解耦思路，以及上面两套插值与求导公式是否清楚？确认无误后，我们就直接写出 `core/manifold.py` 的批处理代码并做验证。

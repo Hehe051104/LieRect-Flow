@@ -81,18 +81,18 @@ def so3_log(R: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:
     Returns:
         (..., 3) 形状的李代数向量 (转轴 * 角度)   omega(角速度) = θ * n
     """
-    # 1. 求迹 tr(R) 并限制范围在 [-1, 3]，防止浮点误差导致 acos 越界返回 nan
+    # 1. 求迹 tr(R) 并提取 cos(θ)
     tr = R[..., 0, 0] + R[..., 1, 1] + R[..., 2, 2]    # (..., )
-    cos_theta = ((tr - 1.0) / 2.0).clamp(-1.0 + eps, 1.0 - eps)  # (..., )
-    theta = torch.acos(cos_theta).unsqueeze(-1)  # (..., 1)
+    cos_theta = ((tr - 1.0) / 2.0).unsqueeze(-1)         # (..., 1)
     
     # 2. 矩阵减转置提取非对称分量：R - R^T = 2sin(θ)* n hat
     diff = R - R.transpose(-1, -2)
     omega_hat_unscaled = diff / 2.0   # (..., 3 , 3)    sin(θ)* n hat
     omega_unscaled = vee(omega_hat_unscaled)     # (..., 3) sin(θ)* n
     
-    # 3. 针对 theta -> 0 区域的数值保护：theta / sin(theta) ≈ 1 + theta^2 / 6
-    sin_theta = torch.sin(theta)
+    # 3. 直接由 sin(θ)*n 的模长提取 sin(θ)，配合 atan2 精确求解 θ，并做 theta -> 0 数值保护：theta / sin(theta) ≈ 1 + theta^2 / 6
+    sin_theta = torch.norm(omega_unscaled, dim=-1, keepdim=True)  # (..., 1)
+    theta = torch.atan2(sin_theta, cos_theta)                     # (..., 1)
     small_angle = theta < eps
 
     # scale = θ/sin(θ)
