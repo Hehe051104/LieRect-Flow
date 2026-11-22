@@ -101,7 +101,7 @@ def se3_geodesic_interpolate(
     return R_t, p_t, v_target, omega_target
 
 
-# 推理时的“步进执行器”
+# 推理时的“步进执行器”  执行网络输出的动作
 def se3_euler_step(
     R_t: torch.Tensor,
     p_t: torch.Tensor,
