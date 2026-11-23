@@ -36,10 +36,10 @@ def test_se3_equivariance():
     points_trans = torch.matmul(points, R_g.transpose(-1, -2)) + p_g.unsqueeze(1)
 
     with torch.no_grad():
-        v_trans, omega_trans = model(R_t_trans, p_t_trans, points_trans, t)
+        v_trans, omega_trans = model(R_t_trans, p_t_trans, points_trans, t) # 模型算出来的
 
     # 3. 验证等变性与不变性误差
-    v_expected = torch.matmul(R_g, v_orig.unsqueeze(-1)).squeeze(-1)
+    v_expected = torch.matmul(R_g, v_orig.unsqueeze(-1)).squeeze(-1)  # 数学等式的期望值
     v_err = (v_trans - v_expected).abs().max().item()
     omega_err = (omega_trans - omega_orig).abs().max().item()
 

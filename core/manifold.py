@@ -122,3 +122,17 @@ def se3_euler_step(
     p_next = p_t + dt * v_pred
     R_next = torch.matmul(R_t, so3_exp(dt * omega_pred))
     return R_next, p_next
+
+
+
+def sample_local_se3_noise(
+    R_ref: torch.Tensor,
+    p_ref: torch.Tensor,
+    trans_scale: float = 0.25,
+    rot_scale: float = 0.5,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """围绕参考位姿 (R_ref, p_ref) 添加局部扰动，生成安全的起点位姿 (R_0, p_0)"""
+    omega_noise = torch.randn_like(p_ref) * rot_scale
+    R_0 = torch.matmul(R_ref, so3_exp(omega_noise))
+    p_0 = p_ref + torch.randn_like(p_ref) * trans_scale
+    return R_0, p_0
